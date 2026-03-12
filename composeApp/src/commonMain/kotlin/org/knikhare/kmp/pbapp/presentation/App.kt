@@ -1,7 +1,19 @@
 package org.knikhare.kmp.pbapp.presentation
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
+import io.ktor.client.HttpClient
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.knikhare.kmp.pbapp.core.network.createHttpClient
 
@@ -18,7 +30,6 @@ import org.knikhare.kmp.pbapp.presentation.viewmodel.ProductViewModel
 @Preview
 fun App() {
     val httpClient = remember { createHttpClient() }
-
     val repository = remember { ProductRepositoryImpl(httpClient) }
     val getProductsUseCase = remember { GetProductsUseCase(repository) }
     val searchProductsUseCase = remember { SearchProductsUseCase(repository) }
@@ -36,23 +47,65 @@ fun App() {
     }
 
     MaterialTheme {
-        when(val screen = currentScreen){
-            is Screen.ProductList -> {
-                ProductListScreen(
-                    viewModel = viewModel,
-                    onProductClick = { product ->
-                        currentScreen = Screen.ProductDetail(product)
-                    }
+
+        Scaffold(
+            topBar = {
+                @OptIn(ExperimentalMaterial3Api::class)
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = when (currentScreen) {
+                                is Screen.ProductList -> "Products"
+                                is Screen.ProductDetail -> "Product Details"
+                            }
+                        )
+                    },
+                    navigationIcon = {
+                        if (currentScreen is Screen.ProductDetail) {
+                            IconButton (
+                                onClick = {
+                                    currentScreen = Screen.ProductList
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back"
+                                )
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primary,  // Background color
+                        titleContentColor = MaterialTheme.colorScheme.onPrimary,  // Text color
+                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary  // Icon color
+                    )
+
                 )
             }
-            is Screen.ProductDetail-> {
-                ProductDetailScreen(
-                    product = screen.product,
-                    onBack = {
-                        currentScreen = Screen.ProductList
+        ) { paddingValues ->
+            Box(
+                modifier = androidx.compose.ui.Modifier.padding(paddingValues)
+            ) {
+                when (val screen = currentScreen) {
+                    is Screen.ProductList -> {
+                        ProductListScreen(
+                            viewModel = viewModel,
+                            onProductClick = { product ->
+                                currentScreen = Screen.ProductDetail(product)
+                            }
+                        )
                     }
-                )
+                    is Screen.ProductDetail -> {
+                        ProductDetailScreen(
+                            product = screen.product,
+                            onBack = {
+                                currentScreen = Screen.ProductList
+                            }
+                        )
+                    }
+                }
             }
         }
+
     }
 }
