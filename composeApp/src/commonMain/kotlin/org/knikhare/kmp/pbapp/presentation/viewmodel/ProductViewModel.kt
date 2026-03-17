@@ -2,10 +2,12 @@ package org.knikhare.kmp.pbapp.presentation.viewmodel
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.knikhare.kmp.pbapp.core.domain.DataError
 import org.knikhare.kmp.pbapp.core.domain.Result
 import org.knikhare.kmp.pbapp.domain.model.Product
@@ -19,25 +21,38 @@ class ProductViewModel(
     private val searchProducts: SearchProductsUseCase,
     private val getProductsByCategory: GetProductsByCategoryUseCase) {
 
+    private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
     private val _state = MutableStateFlow(ProductUiState())
     val state = _state.asStateFlow()
 
     fun loadProducts() {
-        CoroutineScope(Dispatchers.Main).launch {
-            updateResponse(getProducts())
+        viewModelScope.launch{
+            val response = withContext(Dispatchers.IO){
+                getProducts()
+            }
+            updateResponse(response)
         }
     }
 
     fun search(query: String) {
-        CoroutineScope(Dispatchers.Main).launch {
-            updateResponse(searchProducts(query))
+        viewModelScope.launch{
+            val response = withContext(Dispatchers.IO){
+                searchProducts(query)
+            }
+            updateResponse(response)
         }
+
     }
 
     fun filterByCategory(category: String) {
-        CoroutineScope(Dispatchers.Main).launch {
-            updateResponse(getProductsByCategory(category))
+        viewModelScope.launch{
+            val response = withContext(Dispatchers.IO){
+                getProductsByCategory(category)
+            }
+            updateResponse(response)
         }
+        
     }
 
     private fun updateResponse( response: Result<List<Product>, DataError.Remote>){
